@@ -1,0 +1,7 @@
+com\app\gamificacion\clients\NotificacionesFeignClient.class
+com\app\gamificacion\clients\ProyectosFeignClient.class
+com\app\gamificacion\models\Proyectos.class
+com\app\gamificacion\controllers\GamificacionController.class
+com\app\gamificacion\models\ProyectosGamificacion.class
+com\app\gamificacion\repository\ProyectosGamificacionRepository.class
+com\app\gamificacion\GamificacionApplication.class
