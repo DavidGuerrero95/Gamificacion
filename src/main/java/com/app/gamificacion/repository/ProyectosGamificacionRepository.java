@@ -6,13 +6,15 @@ import org.springframework.data.rest.core.annotation.RestResource;
 
 import com.app.gamificacion.models.ProyectosGamificacion;
 
-
 public interface ProyectosGamificacionRepository extends MongoRepository<ProyectosGamificacion, String> {
-	
-	@RestResource(path = "buscar-name")
-	public ProyectosGamificacion findByNombre(@Param("nombre") String nombre);
-	
-	@RestResource(path = "existNombre")
-	public Boolean existsByNombre(@Param("nombre") String nombre);
+
+	@RestResource(path = "buscar-codigo")
+	public ProyectosGamificacion findByIdProyecto(@Param("idProyecto") Integer idProyecto);
+
+	@RestResource(path = "exist-codigo")
+	public Boolean existsByIdProyecto(@Param("idProyecto") Integer idProyecto);
+
+	@RestResource(path = "delete-codigo")
+	public Boolean deleteByIdProyecto(@Param("idProyecto") Integer idProyecto);
 
 }

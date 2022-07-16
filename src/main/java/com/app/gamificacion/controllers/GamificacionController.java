@@ -1,8 +1,6 @@
 package com.app.gamificacion.controllers;
 
 import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -21,6 +19,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.app.gamificacion.clients.NotificacionesFeignClient;
 import com.app.gamificacion.clients.ProyectosFeignClient;
@@ -41,49 +40,53 @@ public class GamificacionController {
 	@Autowired
 	NotificacionesFeignClient nClient;
 
-	@PostMapping("/gamificacion/proyectos/crear/{nombre}")
-	@ResponseStatus(code = HttpStatus.CREATED)
-	public ResponseEntity<?> crearGamificacion(@PathVariable("nombre") String nombre,
+//  ****************************	GAMIFICACION 	***********************************  //
+
+	// CREAR GAMIFICACION
+	@PostMapping("/gamificacion/proyectos/crear/{idProyecto}")
+	public Boolean crearGamificacion(@PathVariable("idProyecto") Integer idProyecto,
 			@RequestParam(value = "titulo", defaultValue = "Titulo") String titulo,
 			@RequestParam(value = "premios", defaultValue = "") List<String> premios,
 			@RequestParam(value = "tyc", defaultValue = "Terminos y Condiciones") String tyc,
-			@RequestParam(value = "fechaTerminacion", defaultValue = "24/12/2022") String fechaTerminacion,
+			@RequestParam(value = "fechaTerminacion") Date fechaTerminacion,
 			@RequestParam(value = "patrocinadores", defaultValue = "") List<String> patrocinadores,
 			@RequestParam(value = "habilitado", defaultValue = "false") Boolean habilitado,
 			@RequestParam(value = "ganadores", defaultValue = "1") Integer ganadores,
 			@RequestParam(value = "mensajeParticipacion", defaultValue = "\n Ya estas participando en la rifa de: ") String mensajeParticipacion,
 			@RequestParam(value = "mensajeGanador", defaultValue = "Ganaste el sorteo en el marco del proyecto: ") String mensajeGanador,
 			@RequestParam(value = "mensajeBienvenida", defaultValue = "Por participar en este proyecto podras ser parte de una gran rifa") String mensajeBienvenida)
-			throws ParseException {
-		if (pClient.existNombre(nombre)) {
-			if (pClient.verEstadoGamificacion(nombre)) {
-				Date fecha = new SimpleDateFormat("dd/MM/yyyy").parse(fechaTerminacion);
-				ProyectosGamificacion p = new ProyectosGamificacion(nombre, titulo, premios, tyc, fecha, patrocinadores,
-						new ArrayList<String>(), new ArrayList<String>(), habilitado, ganadores, mensajeParticipacion,
-						mensajeGanador,mensajeBienvenida);
+			throws IOException {
+		if (pClient.existNombre(idProyecto)) {
+			if (pClient.verEstadoGamificacion(idProyecto)) {
+				if (fechaTerminacion == null)
+					fechaTerminacion = new Date();
+				ProyectosGamificacion p = new ProyectosGamificacion(idProyecto, titulo, premios, tyc, fechaTerminacion,
+						patrocinadores, new ArrayList<String>(), new ArrayList<String>(), habilitado, ganadores,
+						mensajeParticipacion, mensajeGanador, mensajeBienvenida);
 				pgRepository.save(p);
 				logger.info("Creacion Correcta Gamificacion");
-				return ResponseEntity.ok("Gamificacion creada correctamente");
+				return true;
 			}
-			return ResponseEntity.badRequest().body("Gamificacion no esta habilitada en el proyecto: " + nombre);
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "El proyecto no existe");
 		}
-		return ResponseEntity.badRequest().body("proyecto: " + nombre + " no existe");
+		throw new ResponseStatusException(HttpStatus.NOT_FOUND, "El proyecto no existe");
 	}
 
-	@PutMapping("/gamificacion/proyectos/editar/{nombre}")
+	// EDITAR GAMIFICACION
+	@PutMapping("/gamificacion/proyectos/editar/{idProyecto}")
 	@ResponseStatus(code = HttpStatus.OK)
-	public ResponseEntity<?> editarGamificacionProyecto(@PathVariable("nombre") String nombre,
+	public ResponseEntity<?> editarGamificacionProyecto(@PathVariable("idProyecto") Integer idProyecto,
 			@RequestParam("titulo") String titulo, @RequestParam("premios") List<String> premios,
 			@RequestParam("tyc") String tyc, @RequestParam("fechaTerminacion") String fecha,
 			@RequestParam("patrocinadores") List<String> patrocinadores, @RequestParam("ganadores") Integer ganadores,
 			@RequestParam("mensajeParticipacion") String mensajeParticipacion,
-			@RequestParam("mensajeGanador") String mensajeGanador) throws ParseException {
+			@RequestParam("mensajeGanador") String mensajeGanador) throws IOException {
 
-		if (pgRepository.existsByNombre(nombre)) {
-			ProyectosGamificacion pg = pgRepository.findByNombre(nombre);
+		if (pgRepository.existsByIdProyecto(idProyecto)) {
+			ProyectosGamificacion pg = pgRepository.findByIdProyecto(idProyecto);
 			Date date = new Date();
 			if (!fecha.isEmpty()) {
-				date = new SimpleDateFormat("dd/MM/yyyy").parse(fecha);
+				date = new Date();
 				pg.setFechaTerminacion(date);
 			}
 			if (!titulo.isEmpty())
@@ -104,50 +107,44 @@ public class GamificacionController {
 			pgRepository.save(pg);
 			return ResponseEntity.ok("Edicion correcta de gamificacion");
 		}
-		return ResponseEntity.badRequest().body("Proyecto: " + nombre + " No existe");
+		throw new ResponseStatusException(HttpStatus.NOT_FOUND, "El proyecto no existe");
+
 	}
 
-	@GetMapping("/gamificacion/proyectos/ver/{nombre}")
+	// VER GAMIFICACION
+	@GetMapping("/gamificacion/proyectos/ver/{idProyecto}")
 	@ResponseStatus(code = HttpStatus.OK)
-	public ProyectosGamificacion verGamificacionProyectos(@PathVariable("nombre") String nombre) {
-		if (pgRepository.existsByNombre(nombre)) {
-			return pgRepository.findByNombre(nombre);
+	public ProyectosGamificacion verGamificacionProyectos(@PathVariable("idProyecto") Integer idProyecto) {
+		if (pgRepository.existsByIdProyecto(idProyecto)) {
+			return pgRepository.findByIdProyecto(idProyecto);
 		}
-		logger.info("No existe el proyecto: " + nombre);
-		return null;
+		throw new ResponseStatusException(HttpStatus.NOT_FOUND, "El proyecto no existe");
 	}
 
-	@PutMapping("/gamificacion/proyectos/habilitar/{nombre}")
+	// CAMBIAR ESTADO GAMIFICACION
+	@PutMapping("/gamificacion/proyectos/cambiar-estado/{idProyecto}")
 	@ResponseStatus(code = HttpStatus.OK)
-	public void habilitarProyectosGamificacion(@PathVariable("nombre") String nombre) {
-		if (pgRepository.existsByNombre(nombre)) {
-			ProyectosGamificacion p = pgRepository.findByNombre(nombre);
-			p.setHabilitado(true);
+	public void habilitarProyectosGamificacion(@PathVariable("idProyecto") Integer idProyecto) {
+		if (pgRepository.existsByIdProyecto(idProyecto)) {
+			ProyectosGamificacion p = pgRepository.findByIdProyecto(idProyecto);
+			if (p.getHabilitado())
+				p.setHabilitado(false);
+			else
+				p.setHabilitado(true);
+
 			pgRepository.save(p);
-			logger.info("Actualizado correctamente: " + nombre);
+			logger.info("Actualizado correctamente: " + idProyecto);
 		} else
-			logger.info("No existe el proyecto: " + nombre);
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "El proyecto no existe");
 	}
 
-	@PutMapping("/gamificacion/proyectos/deshabilitar/{nombre}")
-	@ResponseStatus(code = HttpStatus.OK)
-	public void deshabilitarProyectosGamificacion(@PathVariable("nombre") String nombre) {
-		if (pgRepository.existsByNombre(nombre)) {
-			ProyectosGamificacion p = pgRepository.findByNombre(nombre);
-			p.setHabilitado(false);
-			pgRepository.save(p);
-			logger.info("Actualizado correctamente: " + nombre);
-		} else
-			logger.info("No existe el proyecto: " + nombre);
-	}
-
-	@PutMapping("/gamificacion/proyectos/agregar-participante/{nombre}")
-	@ResponseStatus(code = HttpStatus.OK)
-	public Boolean agregarParticipante(@PathVariable("nombre") String nombre, @RequestParam("username") String username)
-			throws IOException {
+	// AGREGAR PARTICIPANTE
+	@PutMapping("/gamificacion/proyectos/agregar-participante/{idProyecto}")
+	public Boolean agregarParticipante(@PathVariable("idProyecto") Integer idProyecto,
+			@RequestParam("username") String username) throws IOException {
 		try {
-			if (pgRepository.existsByNombre(nombre)) {
-				ProyectosGamificacion p = pgRepository.findByNombre(nombre);
+			if (pgRepository.existsByIdProyecto(idProyecto)) {
+				ProyectosGamificacion p = pgRepository.findByIdProyecto(idProyecto);
 				if (p.getHabilitado()) {
 					List<String> listaP = p.getUsuariosParticipantes();
 					listaP.add(username);
@@ -158,15 +155,16 @@ public class GamificacionController {
 			} else
 				return false;
 		} catch (Exception e) {
-			throw new IOException("Error al ver habilitado de proyecto: " + nombre);
+			throw new IOException("Error al ver habilitado de proyecto: " + idProyecto);
 		}
 	}
 
-	@PutMapping("/gamificacion/proyectos/definir-ganadores/{nombre}")
+	// DEFINIR GANADORES
+	@PutMapping("/gamificacion/proyectos/definir-ganadores/{idProyecto}")
 	@ResponseStatus(code = HttpStatus.OK)
-	public void definirGanadoresProyecto(@PathVariable("nombre") String nombre) {
-		if (pgRepository.existsByNombre(nombre)) {
-			ProyectosGamificacion p = pgRepository.findByNombre(nombre);
+	public void definirGanadoresProyecto(@PathVariable("idProyecto") Integer idProyecto) {
+		if (pgRepository.existsByIdProyecto(idProyecto)) {
+			ProyectosGamificacion p = pgRepository.findByIdProyecto(idProyecto);
 			List<String> listaParticipantes = p.getUsuariosParticipantes();
 			List<String> listaGanadores = new ArrayList<String>();
 			Collections.shuffle(listaParticipantes);
@@ -176,50 +174,52 @@ public class GamificacionController {
 			p.setUsuariosGanadores(listaGanadores);
 			p.setHabilitado(false);
 			pgRepository.save(p);
-			logger.info("Lista ganadores del proyecto: " + nombre);
-			nClient.enviarNotificacionGanador(nombre);
+			nClient.enviarNotificacionGanador(listaGanadores, p.getMensajeGanador());
 		} else
-			logger.info("No existe el proyecto: " + nombre);
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "El proyecto no existe");
 	}
 
-	@GetMapping("/gamificacion/proyectos/ver-ganadores/{nombre}")
+	// VER GANADORES
+	@GetMapping("/gamificacion/proyectos/ver-ganadores/{idProyecto}")
 	@ResponseStatus(code = HttpStatus.OK)
-	public List<String> verGanadoresProyecto(@PathVariable("nombre") String nombre) {
-		if (pgRepository.existsByNombre(nombre)) {
-			return pgRepository.findByNombre(nombre).getUsuariosGanadores();
+	public List<String> verGanadoresProyecto(@PathVariable("idProyecto") Integer idProyecto) {
+		if (pgRepository.existsByIdProyecto(idProyecto)) {
+			return pgRepository.findByIdProyecto(idProyecto).getUsuariosGanadores();
 		}
-		logger.info("No existe el proyecto: " + nombre);
-		return null;
+		throw new ResponseStatusException(HttpStatus.NOT_FOUND, "El proyecto no existe");
 	}
 
-	@DeleteMapping("/gamificacion/proyectos/eliminar/{nombre}")
+	// ELIMINAR GAMIFICACION
+	@DeleteMapping("/gamificacion/proyectos/eliminar/{idProyecto}")
 	@ResponseStatus(code = HttpStatus.OK)
-	public Boolean eliminarGamificacionProyecto(@PathVariable("nombre") String nombre) throws IOException {
+	public Boolean eliminarGamificacionProyecto(@PathVariable("idProyecto") Integer idProyecto) throws IOException {
 		try {
-			pgRepository.deleteById(pgRepository.findByNombre(nombre).getId());
+			pgRepository.deleteById(pgRepository.findByIdProyecto(idProyecto).getId());
 			return true;
 		} catch (Exception e) {
-			throw new IOException("Error al eliminar el la gamificacion del proyecto: " + nombre);
+			throw new IOException("Error al eliminar el la gamificacion del proyecto: ");
 		}
 	}
 
-	@GetMapping("/gamificacion/proyectos/existe/{nombre}")
+	// PREGUNTA SI GAMIFICACION EXISTE
+	@GetMapping("/gamificacion/proyectos/existe/{idProyecto}")
 	@ResponseStatus(code = HttpStatus.OK)
-	public Boolean existeGamificacionProyecto(@PathVariable("nombre") String nombre) throws IOException {
+	public Boolean existeGamificacionProyecto(@PathVariable("idProyecto") Integer idProyecto) throws IOException {
 		try {
-			return pgRepository.existsByNombre(nombre);
+			return pgRepository.existsByIdProyecto(idProyecto);
 		} catch (Exception e) {
-			throw new IOException("Error al ver habilitado de proyecto: " + nombre);
+			throw new IOException("Error al ver habilitado de proyecto: ");
 		}
 	}
 
-	@GetMapping("/gamificacion/proyectos/ver-habilitado/{nombre}")
+	// VER SI ESTA O NO HABILITADO
+	@GetMapping("/gamificacion/proyectos/ver-habilitado/{idProyecto}")
 	@ResponseStatus(code = HttpStatus.OK)
-	public Boolean verHabilitadoProyecto(@PathVariable("nombre") String nombre) throws IOException {
+	public Boolean verHabilitadoProyecto(@PathVariable("idProyecto") Integer idProyecto) throws IOException {
 		try {
-			return pgRepository.findByNombre(nombre).getHabilitado();
+			return pgRepository.findByIdProyecto(idProyecto).getHabilitado();
 		} catch (Exception e) {
-			throw new IOException("Error al ver habilitado de proyecto: " + nombre);
+			throw new IOException("Error al ver habilitado de proyecto: ");
 		}
 	}
 
@@ -227,6 +227,20 @@ public class GamificacionController {
 	@ResponseStatus(code = HttpStatus.OK)
 	public void arreglarGamificacion() {
 		pgRepository.deleteAll();
+	}
+
+	// VER MENSAJE PARTICIPACION
+	@GetMapping("/gamificacion/proyectos/mensaje/participacion/{idProyecto}")
+	public String verMensajeParticipacionGamificacionProyectos(@PathVariable("idProyecto") Integer idProyecto)
+			throws IOException, ResponseStatusException {
+		try {
+			if (pgRepository.existsByIdProyecto(idProyecto)) {
+				return pgRepository.findByIdProyecto(idProyecto).getMensajeParticipacion();
+			}
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "El proyecto no existe");
+		} catch (Exception e) {
+			throw new IOException("Error al ver mensaje participacion del proyecto: ");
+		}
 	}
 
 }

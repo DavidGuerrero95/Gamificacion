@@ -15,13 +15,13 @@ public interface ProyectosFeignClient {
 	@GetMapping("/proyectos/listar/")
 	public List<Proyectos> getProyectos();
 
-	@GetMapping("/proyectos/ver/proyecto/{nombre}")
-	public Proyectos verProyecto(@PathVariable("nombre") String nombre);
+	@GetMapping("/proyectos/ver/proyecto/{idProyecto}")
+	public Proyectos verProyecto(@PathVariable("idProyecto") Integer idProyecto);
 
-	@GetMapping("/proyectos/existsByNombre")
-	public Boolean existNombre(@RequestParam("nombre") String nombre);
-	
-	@GetMapping("/proyectos/gamificacion/ver-estado/{nombre}")
-	public Boolean verEstadoGamificacion(@PathVariable("nombre") String nombre);
+	@GetMapping("/proyectos/existsByCodigoProyecto/")
+	public Boolean existNombre(@RequestParam("idProyecto") Integer idProyecto);
+
+	@GetMapping("/proyectos/gamificacion/ver-estado/{idProyecto}")
+	public Boolean verEstadoGamificacion(@PathVariable("idProyecto") Integer idProyecto);
 
 }
