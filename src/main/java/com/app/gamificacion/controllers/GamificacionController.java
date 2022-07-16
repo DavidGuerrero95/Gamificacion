@@ -56,20 +56,18 @@ public class GamificacionController {
 			@RequestParam(value = "mensajeGanador", defaultValue = "Ganaste el sorteo en el marco del proyecto: ") String mensajeGanador,
 			@RequestParam(value = "mensajeBienvenida", defaultValue = "Por participar en este proyecto podras ser parte de una gran rifa") String mensajeBienvenida)
 			throws IOException {
-		if (pClient.existNombre(idProyecto)) {
-			if (pClient.verEstadoGamificacion(idProyecto)) {
-				if (fechaTerminacion == null)
-					fechaTerminacion = new Date();
-				ProyectosGamificacion p = new ProyectosGamificacion(idProyecto, titulo, premios, tyc, fechaTerminacion,
-						patrocinadores, new ArrayList<String>(), new ArrayList<String>(), habilitado, ganadores,
-						mensajeParticipacion, mensajeGanador, mensajeBienvenida);
-				pgRepository.save(p);
-				logger.info("Creacion Correcta Gamificacion");
-				return true;
-			}
-			throw new ResponseStatusException(HttpStatus.CONFLICT, "El proyecto no existe");
+		if (pClient.verEstadoGamificacion(idProyecto)) {
+			if (fechaTerminacion == null)
+				fechaTerminacion = new Date();
+			ProyectosGamificacion p = new ProyectosGamificacion(idProyecto, titulo, premios, tyc, fechaTerminacion,
+					patrocinadores, new ArrayList<String>(), new ArrayList<String>(), habilitado, ganadores,
+					mensajeParticipacion, mensajeGanador, mensajeBienvenida);
+			pgRepository.save(p);
+			logger.info("Creacion Correcta Gamificacion");
+			return true;
 		}
-		throw new ResponseStatusException(HttpStatus.NOT_FOUND, "El proyecto no existe");
+		throw new ResponseStatusException(HttpStatus.CONFLICT, "El proyecto no existe");
+
 	}
 
 	// EDITAR GAMIFICACION
