@@ -56,7 +56,7 @@ public class GamificacionController {
 			@RequestParam(value = "mensajeGanador", defaultValue = "Ganaste el sorteo en el marco del proyecto: ") String mensajeGanador,
 			@RequestParam(value = "mensajeBienvenida", defaultValue = "Por participar en este proyecto podras ser parte de una gran rifa") String mensajeBienvenida)
 			throws IOException {
-		if (pClient.verEstadoGamificacion(idProyecto)) {
+		try {
 			if (fechaTerminacion == null)
 				fechaTerminacion = new Date();
 			ProyectosGamificacion p = new ProyectosGamificacion(idProyecto, titulo, premios, tyc, fechaTerminacion,
@@ -65,9 +65,9 @@ public class GamificacionController {
 			pgRepository.save(p);
 			logger.info("Creacion Correcta Gamificacion");
 			return true;
+		} catch (Exception e) {
+			throw new IOException("error creacion gamificacion" + e.getMessage());
 		}
-		throw new ResponseStatusException(HttpStatus.CONFLICT, "El proyecto no existe");
-
 	}
 
 	// EDITAR GAMIFICACION
